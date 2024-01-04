@@ -1,4 +1,4 @@
-package testenvoieassembleur;
+package raverside;
 
 import javax.swing.*;
 import java.awt.*;
@@ -8,6 +8,8 @@ import java.util.List;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
+import ghidra.program.model.listing.Function;
 
 public class RenameDialog extends JDialog {
 	private List<RenameItem> renameItems;
@@ -22,34 +24,38 @@ public class RenameDialog extends JDialog {
     }
 
 
-    private List<RenameItem> parseResponse(JsonObject response) {
-        List<RenameItem> items = new ArrayList<>();
-        JsonArray renames = response.getAsJsonArray("rename");
-        if (renames != null) {
-            for (int i = 0; i < renames.size(); i++) {
-                JsonArray rename = renames.get(i).getAsJsonArray();
-                String old_name = rename.get(1).getAsString();
-                String new_name = rename.get(2).getAsString();
-                items.add(new RenameItem(old_name, new_name));
-            }
-        }
-        return items;
-    }
-
     private void initUI() {
         setLayout(new BorderLayout());
 
-        // Panel for rename items
+        JPanel renamePanel = createRenamePanel();
+        JScrollPane scrollPane = new JScrollPane(renamePanel);
+        JPanel buttonPanel = createButtonPanel();
+
+        add(scrollPane, BorderLayout.CENTER);
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        setSize(400, 300);
+        setLocationRelativeTo(getOwner());
+    }
+
+    private JPanel createRenamePanel() {
         JPanel renamePanel = new JPanel();
         renamePanel.setLayout(new BoxLayout(renamePanel, BoxLayout.Y_AXIS));
-        JScrollPane scrollPane = new JScrollPane(renamePanel);
+
         for (RenameItem item : renameItems) {
-            JCheckBox checkBox = new JCheckBox(item.getOldName() + " -> " + item.getNewName());
+            JCheckBox checkBox = new JCheckBox(formatRenameText(item));
             checkBoxes.add(checkBox);
             renamePanel.add(checkBox);
         }
 
-        // Panel for buttons
+        return renamePanel;
+    }
+
+    private String formatRenameText(RenameItem item) {
+        return item.getOldName() + " -> " + item.getNewName();
+    }
+
+    private JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel();
         JButton confirmButton = new JButton("Confirm");
         JButton cancelButton = new JButton("Cancel");
@@ -64,11 +70,7 @@ public class RenameDialog extends JDialog {
         buttonPanel.add(confirmButton);
         buttonPanel.add(cancelButton);
 
-        add(scrollPane, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
-
-        setSize(400, 300);
-        setLocationRelativeTo(getOwner());
+        return buttonPanel;
     }
 
     public boolean isConfirmed() {
@@ -88,10 +90,14 @@ public class RenameDialog extends JDialog {
     public static class RenameItem {
         private String old_name;
         private String new_name;
+        private String item_type;
+        private Function function;
 
-        public RenameItem(String old_name, String new_name) {
+        public RenameItem(String old_name, String new_name, String item_type, Function function) {
             this.old_name = old_name;
             this.new_name = new_name;
+            this.item_type = item_type;
+            this.function = function;
         }
 
         public String getOldName() {
@@ -100,6 +106,24 @@ public class RenameDialog extends JDialog {
 
         public String getNewName() {
             return new_name;
+        }
+        
+        public String getItemType() {
+        	return item_type;
+        }
+        
+        public Function getFunction() {
+            return function;
+        }
+        
+        @Override
+        public String toString() {
+            return "RenameItem{" +
+                    "oldName='" + old_name + '\'' +
+                    ", newName='" + new_name + '\'' +
+                    ", itemType='" + item_type + '\'' +
+                    ", function=" + (function != null ? function.getName() : "null") +
+                    '}';
         }
     }
 }
