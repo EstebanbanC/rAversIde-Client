@@ -97,8 +97,7 @@ public class RaversidePlugin extends ProgramPlugin {
 		this.apiManager = new ApiManager(tool, program);
 	    this.featureManager = new FeatureManager(apiManager, program, tool);
 		this.helper = new Helper(tool, program, featureManager);
-
-
+		
 	    // TODO: Customize provider (or remove if a provider is not desired)
 	    String pluginName = getName();
 	    provider = new MyProvider(this, pluginName, this.getCurrentProgram(), apiManager, featureManager, helper);
@@ -122,12 +121,13 @@ public class RaversidePlugin extends ProgramPlugin {
 	protected void programActivated(Program p) {
 		program = p;
 		provider.setProgram(p);
+		provider.refresh();
 	}
 
 	// TODO: If provider is desired, it is recommended to move it to its own file
 	protected static class MyProvider extends ComponentProvider {
 
-		private JPanel panel;
+		protected JPanel panel;
 		private JPanel renameRetypePanel;
 		private JPanel otherPanel;
 		private JPanel IAPanel;
@@ -135,17 +135,17 @@ public class RaversidePlugin extends ProgramPlugin {
 		private DockingAction actionGetFunctions;
 
 		protected JComboBox<String> functionComboBox;
-		private JComboBox<String> functionComboBoxAnalyze;
-		private JComboBox<String> variableComboBox;
-		private JComboBox<String> analysisTypeComboBox;
-		private JComboBox<String> functionSubComboBox;
-		private JComboBox<String> patternSubComboBox;
-		private JTextField inputTextField;
-		private JTextArea textArea;
-		private JTextArea questionArea;
-		private JButton addCommentsButton;
-		private JButton highlightPatternsButton;
-		private JButton analysePatternsButton;
+		protected JComboBox<String> functionComboBoxAnalyze;
+		protected JComboBox<String> variableComboBox;
+		protected JComboBox<String> analysisTypeComboBox;
+		protected JComboBox<String> functionSubComboBox;
+		protected JComboBox<String> patternSubComboBox;
+		protected JTextField inputTextField;
+		protected JTextArea textArea;
+		protected JTextArea questionArea;
+		protected JButton addCommentsButton;
+		protected JButton highlightPatternsButton;
+		protected JButton analysePatternsButton;
 
 		// Services et gestionnaires
 		private ApiManager apiManager;
@@ -165,7 +165,6 @@ public class RaversidePlugin extends ProgramPlugin {
 			tool = plugin.getTool();
 			buildPanel();
 			createActions();
-			refresh();
 		}
 
 		public void setProgram(Program p) {
@@ -175,7 +174,7 @@ public class RaversidePlugin extends ProgramPlugin {
 			helper.setProgram(p);
 		}
 
-		private void refresh() {
+		protected void refresh() {
 			ProgramManager programManager = tool.getService(ProgramManager.class);
 
 			if (programManager != null) {
@@ -209,7 +208,7 @@ public class RaversidePlugin extends ProgramPlugin {
 			}
 		}
 		
-		private void buildPanel() {
+		protected void buildPanel() {
 			textArea = new JTextArea();
 			textArea.setEditable(false);
 		    panel = new JPanel(new GridLayout(3, 1));
@@ -219,29 +218,28 @@ public class RaversidePlugin extends ProgramPlugin {
 		    setVisible(true);
 		}
 
-		private JPanel buildRenameRetypePanel() {
+		protected JPanel buildRenameRetypePanel() {
 			renameRetypePanel = new JPanel(new BorderLayout());
 			renameRetypePanel.setBorder(BorderFactory.createTitledBorder("Rename/Retype"));
 
 			renameRetypePanel.add(buildComboAndTextFieldPanel(), BorderLayout.CENTER);
 			renameRetypePanel.add(buildButtonsPanelRename(), BorderLayout.SOUTH);
-
 			return renameRetypePanel;
 		}
-		private JPanel buildComboAndTextFieldPanel() {
+		protected JPanel buildComboAndTextFieldPanel() {
 		    JPanel comboAndTextFieldPanel = new JPanel(new GridLayout(3, 1));
 		    functionComboBox = new JComboBox<>(new String[]{"Please refresh"});
-		    variableComboBox = new JComboBox<>(new String[]{"Please refresh"});
+		    variableComboBox = new JComboBox<>(new String[]{"Select a function"});
 		    inputTextField = new JTextField();
 		    
 		    comboAndTextFieldPanel.add(functionComboBox);
 		    comboAndTextFieldPanel.add(variableComboBox);
-		    comboAndTextFieldPanel.add(inputTextField);
+		    comboAndTextFieldPanel.add(inputTextField);		    
 
 		    return comboAndTextFieldPanel;
 		}
 
-		private JPanel buildButtonsPanelRename() {
+		protected JPanel buildButtonsPanelRename() {
 			JPanel buttonsPanelRename = new JPanel(new GridLayout(1, 2));
 
 			JButton renameFunctionsButton = new JButton("Rename Functions");
@@ -249,7 +247,12 @@ public class RaversidePlugin extends ProgramPlugin {
 				String selectedFunctionName = (String) functionComboBox.getSelectedItem();
 				ConsoleService consoleService = tool.getService(ConsoleService.class);
 				consoleService.addMessage("Function name :", selectedFunctionName);
-				featureManager.renameFunction(selectedFunctionName);
+				try {
+					featureManager.renameFunction(selectedFunctionName);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 				refresh();
 			});
 
@@ -257,7 +260,12 @@ public class RaversidePlugin extends ProgramPlugin {
 			renameVariablesButton.addActionListener(e -> {
 				String selectedVariableName = (String) variableComboBox.getSelectedItem();
 				String selectedFunctionName = (String) functionComboBox.getSelectedItem();
-				featureManager.renameVariable(selectedVariableName, selectedFunctionName);
+				try {
+					featureManager.renameVariable(selectedVariableName, selectedFunctionName);
+				} catch (IOException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 				refresh();
 			});
 
@@ -267,7 +275,7 @@ public class RaversidePlugin extends ProgramPlugin {
 			return buttonsPanelRename;
 		}
 
-		private JPanel buildOtherPanel() {
+		protected JPanel buildOtherPanel() {
 			otherPanel = new JPanel(new BorderLayout());
 			otherPanel.setBorder(BorderFactory.createTitledBorder("Analyse"));
 
@@ -285,7 +293,7 @@ public class RaversidePlugin extends ProgramPlugin {
 			return otherPanel;
 		}
 
-		private void initializeComponents() {
+		protected void initializeComponents() {
 			addCommentsButton = new JButton("Add Comments");
 			highlightPatternsButton = new JButton("Highlight Interesting Patterns");
 			analysePatternsButton = new JButton("Analyze Interesting Patterns");
@@ -293,13 +301,13 @@ public class RaversidePlugin extends ProgramPlugin {
 			analysisTypeComboBox = new JComboBox<>(new String[]{"Vulnerabilities", "Functions", "Patterns"});
 		}
 
-		private void setupListeners() {
+		protected void setupListeners() {
 			addCommentsButton.addActionListener(this::addCommentsAction);
 			highlightPatternsButton.addActionListener(this::highlightPatternsAction);
 			analysePatternsButton.addActionListener(this::analysePatternsAction);
 		}
 
-		private JPanel createConditionalDropdownPanel() {
+		protected JPanel createConditionalDropdownPanel() {
 			JPanel conditionalDropdownPanel = new JPanel();
 			functionSubComboBox = new JComboBox<>(new String[]{"Function A", "Function B", "Function C"});
 			patternSubComboBox = new JComboBox<>(new String[]{"Pattern 1", "Pattern 2", "Pattern 3"});
@@ -311,7 +319,7 @@ public class RaversidePlugin extends ProgramPlugin {
 		}
 
 
-		private void analysePatternsAction(ActionEvent e) {
+		protected void analysePatternsAction(ActionEvent e) {
 			ProgramManager programManager = tool.getService(ProgramManager.class);
 			Program currentProgram = programManager.getCurrentProgram();
 			boolean getAllCode = "All Functions".equals(functionComboBox.getSelectedItem());
@@ -321,10 +329,13 @@ public class RaversidePlugin extends ProgramPlugin {
 			JsonObject request = helper.prepareAnalysisRequest(currentProgram, decomp, getAllCode, functionComboBox);
 
 			try {
-				String responseJson = apiManager.sendAnalysisRequest(request);
-				if (responseJson != null) {
-					featureManager.processAnalysisResponse(currentProgram, responseJson);
-				}
+			    apiManager.sendAnalysisRequest(request, responseJson -> {
+			        if (responseJson != null) {
+			            featureManager.processAnalysisResponse(currentProgram, responseJson);
+			            ConsoleService consoleService = tool.getService(ConsoleService.class);
+			            consoleService.addMessage("response :", String.valueOf(responseJson) + "\n");
+			        }
+			    });
 			} catch (IOException ex) {
 				ex.printStackTrace();
 			}
@@ -332,7 +343,7 @@ public class RaversidePlugin extends ProgramPlugin {
 
 
 
-		private JPanel buildIAPanel() {
+		protected JPanel buildIAPanel() {
 			IAPanel = new JPanel(new BorderLayout());
 			IAPanel.setBorder(BorderFactory.createTitledBorder("IA"));
 
@@ -346,7 +357,7 @@ public class RaversidePlugin extends ProgramPlugin {
 			return IAPanel;
 		}
 
-		private JPanel buildIALeftPanel() {
+		protected JPanel buildIALeftPanel() {
 			JPanel iaLeftPanel = new JPanel(new BorderLayout());
 			iaLeftPanel.add(BorderLayout.NORTH, new JLabel("Ask questions to our ChatBot:"));
 
@@ -359,13 +370,16 @@ public class RaversidePlugin extends ProgramPlugin {
 			return iaLeftPanel;
 		}
 
-		private JButton buildValidationButton() {
+		protected JButton buildValidationButton() {
 			JButton validation = new JButton("Ask");
 			validation.addActionListener(e -> {
 				String question = questionArea.getText();
                 try {
-                    String response = apiManager.sendChatBotRequest(question);
-					textArea.append("Response from API:\n" + response + "\n");
+                    apiManager.sendChatBotRequest(question, response -> {
+                    	if(response != null) {
+                    		textArea.append("Response from API:\n" + response + "\n");
+                    	}
+                    });
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
@@ -373,13 +387,13 @@ public class RaversidePlugin extends ProgramPlugin {
 			return validation;
 		}
 
-		private JButton buildClearButton() {
+		protected JButton buildClearButton() {
 			JButton clear = new JButton("Clear");
 			clear.addActionListener(e -> textArea.setText(""));
 			return clear;
 		}
 
-		private JTextArea buildQuestionArea() {
+		protected JTextArea buildQuestionArea() {
 			questionArea = new JTextArea();
 			questionArea.setEditable(true);
 			return questionArea;

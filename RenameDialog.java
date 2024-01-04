@@ -13,7 +13,7 @@ import ghidra.program.model.listing.Function;
 
 public class RenameDialog extends JDialog {
 	private List<RenameItem> renameItems;
-    private List<JCheckBox> checkBoxes;
+    protected List<JCheckBox> checkBoxes;
     private boolean confirmed = false;
 
     public RenameDialog(Frame owner, List<RenameItem> renameItems) {
@@ -24,7 +24,7 @@ public class RenameDialog extends JDialog {
     }
 
 
-    private void initUI() {
+    protected void initUI() {
         setLayout(new BorderLayout());
 
         JPanel renamePanel = createRenamePanel();
@@ -38,7 +38,7 @@ public class RenameDialog extends JDialog {
         setLocationRelativeTo(getOwner());
     }
 
-    private JPanel createRenamePanel() {
+    protected JPanel createRenamePanel() {
         JPanel renamePanel = new JPanel();
         renamePanel.setLayout(new BoxLayout(renamePanel, BoxLayout.Y_AXIS));
 
@@ -55,7 +55,7 @@ public class RenameDialog extends JDialog {
         return item.getOldName() + " -> " + item.getNewName();
     }
 
-    private JPanel createButtonPanel() {
+    protected JPanel createButtonPanel() {
         JPanel buttonPanel = new JPanel();
         JButton confirmButton = new JButton("Confirm");
         JButton cancelButton = new JButton("Cancel");
@@ -73,7 +73,7 @@ public class RenameDialog extends JDialog {
         return buttonPanel;
     }
 
-    public boolean isConfirmed() {
+    protected boolean isConfirmed() {
         return confirmed;
     }
 
@@ -127,4 +127,3 @@ public class RenameDialog extends JDialog {
         }
     }
 }
-

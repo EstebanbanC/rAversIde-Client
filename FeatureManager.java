@@ -44,29 +44,34 @@ public class FeatureManager {
             this.program = program;
         }
 
-    public void renameFunction(String selectedFunctionName) {
+    public void renameFunction(String selectedFunctionName) throws IOException {
         ConsoleService consoleService = tool.getService(ConsoleService.class);
-        try {
-            Function selectedFunction = Helper.getFunctionByName(selectedFunctionName, program);
-            if (selectedFunction != null) {
-                String responseJson = apiManager.sendRenameFunctionRequest(selectedFunctionName);
-                processRenameResponse(responseJson, selectedFunction);
-            }
-        } catch (IOException ex) {
-            consoleService.addErrorMessage("API Error", "Error while renaming function: " + ex.getMessage());
+        Function selectedFunction = Helper.getFunctionByName(selectedFunctionName, program);
+        if (selectedFunction != null) {
+            apiManager.sendRenameFunctionRequest(selectedFunctionName, responseJson -> {
+                if (responseJson != null) {
+                    processRenameResponse(responseJson, selectedFunction);
+		            consoleService.addMessage("response :", String.valueOf(responseJson) + "\n");
+                }
+            }, error -> {
+                consoleService.addErrorMessage("API Error", "Error while renaming function: " + error.getMessage());
+            });
         }
     }
 
-    public void renameVariable(String selectedVariableName, String selectedFunctionName) {
-        try {
-            Function selectedFunction = Helper.getFunctionByName(selectedFunctionName, program);
-            Variable selectedVariable = Helper.getVariableByName(selectedVariableName, selectedFunction);
-            if (selectedVariable != null) {
-                String responseJson = apiManager.sendRenameVariableRequest(selectedVariableName, selectedFunctionName);
-                processRenameResponse(responseJson, selectedFunction);
-            }
-        } catch (IOException ex) {
-            Msg.showError(this, null, "API Error", "Error while renaming variable: " + ex.getMessage());
+    public void renameVariable(String selectedVariableName, String selectedFunctionName) throws IOException {
+        ConsoleService consoleService = tool.getService(ConsoleService.class);
+        Function selectedFunction = Helper.getFunctionByName(selectedFunctionName, program);
+        Variable selectedVariable = Helper.getVariableByName(selectedVariableName, selectedFunction);
+        if (selectedVariable != null) {
+            apiManager.sendRenameVariableRequest(selectedVariableName, selectedFunctionName, responseJson -> {
+                if (responseJson != null) {
+                    processRenameResponse(responseJson, selectedFunction);
+		            consoleService.addMessage("response :", String.valueOf(responseJson) + "\n");
+                }
+            }, error -> {
+            	consoleService.addErrorMessage("API Error", "Error while renaming variable: " + error.getMessage());
+            });
         }
     }
 

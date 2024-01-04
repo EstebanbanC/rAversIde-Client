@@ -9,15 +9,24 @@ import java.net.URL;
 
 import com.google.gson.JsonObject;
 
+import ghidra.app.services.ConsoleService;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 public class ApiManager {
 
     private static final String BASE_URL = "http://127.0.0.1:8000";
     private PluginTool tool;
     private Program program;
+    
+    private final ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    private final ReentrantLock lock = new ReentrantLock();
 
     public ApiManager(PluginTool tool, Program program) {
         this.tool = tool;
@@ -28,27 +37,58 @@ public class ApiManager {
         this.program = program;
     }
 
-    public String sendRenameFunctionRequest(String selectedFunctionName) throws IOException {
+    public void sendRenameFunctionRequest(String selectedFunctionName, Consumer<String> callback, Consumer<Exception> errorCallback) throws IOException {
         TaskMonitor monitor = tool.getService(TaskMonitor.class);
         JsonObject request = Helper.createRenameFunctionRequestJson(selectedFunctionName, program, monitor);
-        return sendHttpRequest("/renameFunction", request.toString());
+
+        ConsoleService consoleService = tool.getService(ConsoleService.class);
+        consoleService.addMessage("a request is in progress  :", "renameFunction");
+        sendHttpRequestAsync("/renameFunction", request.toString(), callback);
     }
 
-    public String sendRenameVariableRequest(String selectedVariableName, String selectedFunctionName) throws IOException {
+    public void sendRenameVariableRequest(String selectedVariableName, String selectedFunctionName, Consumer<String> callback, Consumer<Exception> errorCallback) throws IOException {
         TaskMonitor monitor = tool.getService(TaskMonitor.class);
         JsonObject request = Helper.createRenameVariableRequestJson(selectedVariableName, selectedFunctionName, program, monitor);
-        return sendHttpRequest("/renameVariable", request.toString());
+        
+        ConsoleService consoleService = tool.getService(ConsoleService.class);
+        consoleService.addMessage("a request is in progress  :", "renameVariable");
+        sendHttpRequestAsync("/renameVariable", request.toString(), callback);
     }
 
-    public String sendChatBotRequest(String question) throws IOException {
+    public void sendChatBotRequest(String question, Consumer<String> callback) throws IOException {
         JsonObject request = Helper.createChatBotRequest(question, program, tool);
-        return sendHttpRequest("/handle_chatbot", request.toString());
+
+        ConsoleService consoleService = tool.getService(ConsoleService.class);
+        consoleService.addMessage("a request is in progress  :", "ChatBot");
+        sendHttpRequestAsync("/handle_chatbot", request.toString(), callback);
     }
 
-    public String sendAnalysisRequest(JsonObject request) throws IOException {
-        return sendHttpRequest("/analyze", request.toString());
-    }
+    public void sendAnalysisRequest(JsonObject request, Consumer<String> callback) throws IOException {
 
+        ConsoleService consoleService = tool.getService(ConsoleService.class);
+        consoleService.addMessage("a request is in progress  :", "Analysis");
+        sendHttpRequestAsync("/analyze", request.toString(), callback);
+    }
+    
+    private void sendHttpRequestAsync(String route, String requestData, Consumer<String> callback) {
+        ConsoleService consoleService = tool.getService(ConsoleService.class);
+        executorService.submit(() -> {
+            if (lock.tryLock()) {
+                try {
+                    String response = sendHttpRequest(route, requestData);
+                    callback.accept(response);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    consoleService.addErrorMessage("Thread error", "Error submitting task: " + e.getMessage());
+                } finally {
+                    lock.unlock();
+                }
+            } else {
+            	consoleService.addErrorMessage("Thread error", "An operation is already underway");
+            }
+        });
+    }
+    
     private String sendHttpRequest(String route, String requestData) throws IOException {
         URL url = new URL(BASE_URL + route);
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -73,5 +113,10 @@ public class ApiManager {
         } finally {
             con.disconnect();
         }
+    }
+    
+    // Méthode pour fermer le pool de threads lors de la fermeture de l'application
+    public void shutdown() {
+        executorService.shutdown();
     }
 }
