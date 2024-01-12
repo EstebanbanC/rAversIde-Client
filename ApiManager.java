@@ -19,6 +19,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
+import javax.swing.JComboBox;
+
 public class ApiManager {
 
     private static final String BASE_URL = "http://127.0.0.1:8000";
@@ -55,11 +57,12 @@ public class ApiManager {
         sendHttpRequestAsync("/renameVariable", request.toString(), callback);
     }
 
-    public void sendChatBotRequest(String question, Consumer<String> callback) throws IOException {
-        JsonObject request = Helper.createChatBotRequest(question, program, tool);
+    public void sendChatBotRequest(String question, Consumer<String> callback, JComboBox<String> functionComboBox) throws IOException {
+        JsonObject request = Helper.createChatBotRequest(question, program, tool, functionComboBox);
+
 
         ConsoleService consoleService = tool.getService(ConsoleService.class);
-        consoleService.addMessage("a request is in progress  :", "ChatBot");
+        consoleService.addMessage("a request is in progress  :", "ChatBot " + request);
         sendHttpRequestAsync("/handle_chatbot", request.toString(), callback);
     }
 

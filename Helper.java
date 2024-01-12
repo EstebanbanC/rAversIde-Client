@@ -82,26 +82,9 @@ public class Helper {
         decomp.openProgram(program);
 
         JsonObject code_c = new JsonObject();
-        JsonObject code_asm = new JsonObject();
-        JsonArray line;
-        JsonArray functionCode = new JsonArray();
 
-        Listing listing = program.getListing();
-        AddressSetView addrSet = function.getBody();
-        InstructionIterator codeUnits = listing.getInstructions(addrSet, true);
-
-        while (codeUnits.hasNext()) {
-            CodeUnit codeUnit = codeUnits.next();
-            line = new JsonArray();
-            line.add(codeUnit.getAddress().toString());
-            line.add(codeUnit.toString());
-            functionCode.add(line);
-        }
-
-        code_asm.add(function.getName(), functionCode);
         code_c.addProperty(function.getName(), decomp.decompileFunction(function, 0, monitor).getDecompiledFunction().getC());
 
-        request.add("code_asm", code_asm);
         request.add("code_c", code_c);
     }
 
@@ -127,40 +110,28 @@ public class Helper {
         return null;
     }
 
-    public static JsonObject createChatBotRequest(String question, Program program, PluginTool tool) {
+    public static JsonObject createChatBotRequest(String question, Program program, PluginTool tool, JComboBox<String> functionComboBox) {
         DecompInterface decomp = new DecompInterface();
         decomp.openProgram(program);
         TaskMonitor monitor = tool.getService(TaskMonitor.class);
-
+        
         JsonObject request = new JsonObject();
         request.addProperty("action", "Chatbot");
         request.addProperty("question", question);
 
-        JsonObject code_asm = new JsonObject();
         JsonObject code_c = new JsonObject();
 
         Listing listing = program.getListing();
         FunctionIterator functions = listing.getFunctions(true);
 
         for (Function function : functions) {
-            AddressSetView addrSet = function.getBody();
-            InstructionIterator codeUnits = listing.getInstructions(addrSet, true);
-
-            JsonArray functionCode = new JsonArray();
-            for (CodeUnit codeUnit : codeUnits) {
-                JsonArray line = new JsonArray();
-                line.add(codeUnit.getAddress().toString());
-                line.add(codeUnit.toString());
-                functionCode.add(line);
-            }
-
-            code_asm.add(function.getName(), functionCode);
-            code_c.addProperty(function.getName(), decomp.decompileFunction(function, 0, monitor).getDecompiledFunction().getC());
+        	if (function.getName().equals(functionComboBox.getSelectedItem())) {
+        		code_c.addProperty(function.getName(), decomp.decompileFunction(function, 0, monitor).getDecompiledFunction().getC());
+        	}
         }
 
-        request.add("code_asm", code_asm);
         request.add("code_c", code_c);
-
+       
         return request;
     }
 

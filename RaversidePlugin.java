@@ -379,7 +379,7 @@ public class RaversidePlugin extends ProgramPlugin {
                     	if(response != null) {
                     		textArea.append("Response from API:\n" + response + "\n");
                     	}
-                    });
+                    }, functionComboBox);
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
