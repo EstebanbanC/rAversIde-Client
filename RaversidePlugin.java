@@ -28,6 +28,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -91,8 +92,10 @@ public class RaversidePlugin extends ProgramPlugin {
 	 * Plugin constructor.
 	 * 
 	 * @param tool The plugin tool that this plugin is added to.
+	 * @throws URISyntaxException 
+	 * @throws InterruptedException 
 	 */
-	public RaversidePlugin(PluginTool tool) {
+	public RaversidePlugin(PluginTool tool) throws URISyntaxException, InterruptedException {
 		super(tool);
 		this.apiManager = new ApiManager(tool, program);
 	    this.featureManager = new FeatureManager(apiManager, program, tool);
@@ -135,16 +138,10 @@ public class RaversidePlugin extends ProgramPlugin {
 		private DockingAction actionGetFunctions;
 
 		protected JComboBox<String> functionComboBox;
-		protected JComboBox<String> functionComboBoxAnalyze;
 		protected JComboBox<String> variableComboBox;
-		protected JComboBox<String> analysisTypeComboBox;
-		protected JComboBox<String> functionSubComboBox;
-		protected JComboBox<String> patternSubComboBox;
 		protected JTextField inputTextField;
-		protected JTextArea textArea;
+		protected static JTextArea textArea;
 		protected JTextArea questionArea;
-		protected JButton addCommentsButton;
-		protected JButton highlightPatternsButton;
 		protected JButton analysePatternsButton;
 
 		// Services et gestionnaires
@@ -200,8 +197,6 @@ public class RaversidePlugin extends ProgramPlugin {
 						@Override
 						public void run() {
 							functionComboBox.setModel(new DefaultComboBoxModel<>(functionNames.toArray(new String[0])));
-							functionSubComboBox.setModel(new DefaultComboBoxModel<>(functionNames.toArray(new String[0])));
-							functionComboBoxAnalyze.setModel(new DefaultComboBoxModel<>(functionNames.toArray(new String[0])));
 						}
 					});
 				}
@@ -211,6 +206,8 @@ public class RaversidePlugin extends ProgramPlugin {
 		protected void buildPanel() {
 			textArea = new JTextArea();
 			textArea.setEditable(false);
+			textArea.setLineWrap(true);
+			textArea.setWrapStyleWord(true);
 		    panel = new JPanel(new GridLayout(3, 1));
 		    panel.add(buildRenameRetypePanel());
 		    panel.add(buildOtherPanel());
@@ -282,40 +279,17 @@ public class RaversidePlugin extends ProgramPlugin {
 			initializeComponents();
 			setupListeners();
 
-			JPanel conditionalDropdownPanel = createConditionalDropdownPanel();
-
-			otherPanel.add(BorderLayout.NORTH, analysisTypeComboBox);
-			otherPanel.add(BorderLayout.WEST, addCommentsButton);
-			otherPanel.add(BorderLayout.CENTER, highlightPatternsButton);
-			otherPanel.add(BorderLayout.SOUTH, analysePatternsButton);
-			otherPanel.add(BorderLayout.EAST, conditionalDropdownPanel);
+			otherPanel.add(BorderLayout.CENTER, analysePatternsButton);
 
 			return otherPanel;
 		}
 
 		protected void initializeComponents() {
-			addCommentsButton = new JButton("Add Comments");
-			highlightPatternsButton = new JButton("Highlight Interesting Patterns");
 			analysePatternsButton = new JButton("Analyze Interesting Patterns");
-			functionComboBoxAnalyze = new JComboBox<>(new String[]{"Function 1", "Function 2", "Function 3"});
-			analysisTypeComboBox = new JComboBox<>(new String[]{"Vulnerabilities", "Functions", "Patterns"});
 		}
 
 		protected void setupListeners() {
-			addCommentsButton.addActionListener(this::addCommentsAction);
-			highlightPatternsButton.addActionListener(this::highlightPatternsAction);
 			analysePatternsButton.addActionListener(this::analysePatternsAction);
-		}
-
-		protected JPanel createConditionalDropdownPanel() {
-			JPanel conditionalDropdownPanel = new JPanel();
-			functionSubComboBox = new JComboBox<>(new String[]{"Function A", "Function B", "Function C"});
-			patternSubComboBox = new JComboBox<>(new String[]{"Pattern 1", "Pattern 2", "Pattern 3"});
-
-			conditionalDropdownPanel.add(functionSubComboBox);
-			conditionalDropdownPanel.add(patternSubComboBox);
-
-			return conditionalDropdownPanel;
 		}
 
 
@@ -364,8 +338,8 @@ public class RaversidePlugin extends ProgramPlugin {
 			JButton validationButton = buildValidationButton();
 			JButton clearButton = buildClearButton();
 
-			iaLeftPanel.add(BorderLayout.SOUTH, validationButton);
-			iaLeftPanel.add(BorderLayout.CENTER, clearButton);
+			iaLeftPanel.add(BorderLayout.CENTER, validationButton);
+			iaLeftPanel.add(BorderLayout.SOUTH, clearButton);
 
 			return iaLeftPanel;
 		}
@@ -377,10 +351,10 @@ public class RaversidePlugin extends ProgramPlugin {
                 try {
                     apiManager.sendChatBotRequest(question, response -> {
                     	if(response != null) {
-                    		textArea.append("Response from API:\n" + response + "\n");
+                    		//textArea.append("Response from API:\n" + response + "\n");
                     	}
                     }, functionComboBox);
-                } catch (IOException ex) {
+                } catch (URISyntaxException ex) {
                     throw new RuntimeException(ex);
                 }
             });

@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 import com.google.gson.JsonObject;
@@ -19,20 +21,37 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
+import raverside.RaversidePlugin.MyProvider;
+
 import javax.swing.JComboBox;
+import javax.swing.JTextArea;
 
 public class ApiManager {
 
     private static final String BASE_URL = "http://127.0.0.1:8000";
     private PluginTool tool;
     private Program program;
-    
+    private static MyWebSocketClient client;
+
+    private JTextArea theTextArea;
     private final ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
     private final ReentrantLock lock = new ReentrantLock();
 
     public ApiManager(PluginTool tool, Program program) {
         this.tool = tool;
         this.program = program;
+    }
+    
+    private void handleWebSocketResponse(String message) {
+
+        theTextArea = RaversidePlugin.MyProvider.textArea;
+        ConsoleService consoleService = tool.getService(ConsoleService.class);
+        consoleService.addMessage("", message);
+        if (message.endsWith("FIN")) {
+            client.close(0);
+            return; 
+        }
+		theTextArea.append(message);
     }
 
     public void setProgram(Program program) {
@@ -57,13 +76,20 @@ public class ApiManager {
         sendHttpRequestAsync("/renameVariable", request.toString(), callback);
     }
 
-    public void sendChatBotRequest(String question, Consumer<String> callback, JComboBox<String> functionComboBox) throws IOException {
+    public void sendChatBotRequest(String question, Consumer<String> callback, JComboBox<String> functionComboBox) throws URISyntaxException {
+
+        URI serverUri = new URI("ws://127.0.0.1:8080");
+        Consumer<String> wsResponseConsumer = this::handleWebSocketResponse;
+        client = new MyWebSocketClient(tool, serverUri, wsResponseConsumer);
+        client.connect();
         JsonObject request = Helper.createChatBotRequest(question, program, tool, functionComboBox);
 
 
         ConsoleService consoleService = tool.getService(ConsoleService.class);
         consoleService.addMessage("a request is in progress  :", "ChatBot " + request);
         sendHttpRequestAsync("/handle_chatbot", request.toString(), callback);
+
+        consoleService.addMessage("message sent :", "OK");
     }
 
     public void sendAnalysisRequest(JsonObject request, Consumer<String> callback) throws IOException {
