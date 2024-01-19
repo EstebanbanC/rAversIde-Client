@@ -21,8 +21,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 
-import raverside.RaversidePlugin.MyProvider;
-
 import javax.swing.JComboBox;
 import javax.swing.JTextArea;
 
@@ -92,7 +90,7 @@ public class ApiManager {
         consoleService.addMessage("message sent :", "OK");
     }
 
-    public void sendAnalysisRequest(JsonObject request, Consumer<String> callback) throws IOException {
+    public void sendAnalysisRequest(JsonObject request, Consumer<String> callback) {
 
         ConsoleService consoleService = tool.getService(ConsoleService.class);
         consoleService.addMessage("a request is in progress  :", "Analysis");

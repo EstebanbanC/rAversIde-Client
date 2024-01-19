@@ -6,14 +6,11 @@ import com.google.gson.JsonObject;
 import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.services.ConsoleService;
 import ghidra.framework.plugintool.PluginTool;
-import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
-import ghidra.program.model.listing.InstructionIterator;
 import ghidra.program.model.listing.Listing;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.listing.Variable;
-import ghidra.program.model.listing.CodeUnit;
 import ghidra.util.task.TaskMonitor;
 
 import javax.swing.*;

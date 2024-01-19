@@ -24,12 +24,8 @@ import com.google.gson.JsonObject;
 import java.awt.event.ActionEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -44,12 +40,9 @@ import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.ProgramPlugin;
 import ghidra.app.services.ConsoleService;
-import ghidra.app.services.GoToService;
 import ghidra.app.services.ProgramManager;
 import ghidra.framework.plugintool.*;
 import ghidra.framework.plugintool.util.PluginStatus;
-import ghidra.program.model.address.Address;
-import ghidra.program.model.listing.CodeUnit;
 import ghidra.program.model.listing.Function;
 import ghidra.program.model.listing.FunctionIterator;
 import ghidra.program.model.listing.Instruction;
@@ -59,9 +52,7 @@ import ghidra.program.model.listing.Program;
 import ghidra.program.model.listing.Variable;
 import ghidra.program.model.symbol.Namespace;
 import ghidra.program.model.symbol.Symbol;
-import ghidra.program.util.ProgramLocation;
 import ghidra.util.HelpLocation;
-import ghidra.util.Msg;
 import resources.Icons;
 import resources.ResourceManager;
 
@@ -134,8 +125,9 @@ public class RaversidePlugin extends ProgramPlugin {
 		private JPanel renameRetypePanel;
 		private JPanel otherPanel;
 		private JPanel IAPanel;
-		private DockingAction action;
 		private DockingAction actionGetFunctions;
+		private DockingAction actionBadFeedback;
+		private DockingAction actionGoodFeedback;
 
 		protected JComboBox<String> functionComboBox;
 		protected JComboBox<String> variableComboBox;
@@ -208,10 +200,25 @@ public class RaversidePlugin extends ProgramPlugin {
 			textArea.setEditable(false);
 			textArea.setLineWrap(true);
 			textArea.setWrapStyleWord(true);
-		    panel = new JPanel(new GridLayout(3, 1));
-		    panel.add(buildRenameRetypePanel());
-		    panel.add(buildOtherPanel());
-		    panel.add(buildIAPanel());
+		    panel = new JPanel(new GridBagLayout());
+
+		    GridBagConstraints gbc = new GridBagConstraints();
+		    gbc.fill = GridBagConstraints.BOTH;
+		    gbc.gridx = 0;
+		    gbc.weightx = 1.0; 
+
+		    gbc.gridy = 0;
+		    gbc.weighty = 2.0; // Set weight for Rename/Retype panel
+		    panel.add(buildRenameRetypePanel(), gbc);
+
+		    gbc.gridy = 1;
+		    gbc.weighty = 1.0; // Set weight for Analyse panel
+		    panel.add(buildOtherPanel(), gbc);
+
+		    gbc.gridy = 2;
+		    gbc.weighty = 2.0; // Set weight for IA panel
+		    panel.add(buildIAPanel(), gbc);
+
 		    setVisible(true);
 		}
 
@@ -302,17 +309,13 @@ public class RaversidePlugin extends ProgramPlugin {
 
 			JsonObject request = helper.prepareAnalysisRequest(currentProgram, decomp, getAllCode, functionComboBox);
 
-			try {
-			    apiManager.sendAnalysisRequest(request, responseJson -> {
-			        if (responseJson != null) {
-			            featureManager.processAnalysisResponse(currentProgram, responseJson);
-			            ConsoleService consoleService = tool.getService(ConsoleService.class);
-			            consoleService.addMessage("response :", String.valueOf(responseJson) + "\n");
-			        }
-			    });
-			} catch (IOException ex) {
-				ex.printStackTrace();
-			}
+			apiManager.sendAnalysisRequest(request, responseJson -> {
+			    if (responseJson != null) {
+			        featureManager.processAnalysisResponse(currentProgram, responseJson);
+			        ConsoleService consoleService = tool.getService(ConsoleService.class);
+			        consoleService.addMessage("response :", String.valueOf(responseJson) + "\n");
+			    }
+			});
 		}
 
 
@@ -376,7 +379,7 @@ public class RaversidePlugin extends ProgramPlugin {
 
 		// NE SAIT PAS SI ON GARDE
 
-		private void addCommentsAction(ActionEvent e) {
+		/*private void addCommentsAction(ActionEvent e) {
 			try {
 				ProgramManager programManager = tool.getService(ProgramManager.class);
 				Program currentProgram = programManager.getCurrentProgram();
@@ -418,7 +421,7 @@ public class RaversidePlugin extends ProgramPlugin {
 			featureManager.SetColor(addressColor, Color.GREEN);
 		}
 
-
+*/
 	
 
 		// TODO: Customize actions
@@ -435,7 +438,34 @@ public class RaversidePlugin extends ProgramPlugin {
 			actionGetFunctions.setEnabled(true);
 			actionGetFunctions.markHelpUnnecessary();
 			dockingTool.addLocalAction(this, actionGetFunctions);
-
+			
+			actionGoodFeedback = new DockingAction("Good Feedback", getName()) {
+				@Override
+				public void actionPerformed(ActionContext context) {
+					ConsoleService consoleService = tool.getService(ConsoleService.class);
+					consoleService.addMessage("Feedback Good", "Implemented soon");
+				}
+			};
+			
+			actionGoodFeedback.setToolBarData(new ToolBarData(Icons.ADD_ICON, null));
+			actionGoodFeedback.setEnabled(true);
+			actionGoodFeedback.markHelpUnnecessary();
+			dockingTool.addLocalAction(this, actionGoodFeedback);
+			
+			actionBadFeedback = new DockingAction("Bad Feedback", getName()) {
+				@Override
+				public void actionPerformed(ActionContext context) {
+					ConsoleService consoleService = tool.getService(ConsoleService.class);
+					consoleService.addMessage("Feedback Bad", "Implemented soon");
+				}
+			};
+			
+			actionBadFeedback.setToolBarData(new ToolBarData(Icons.DELETE_ICON, null));
+			actionBadFeedback.setEnabled(true);
+			actionBadFeedback.markHelpUnnecessary();
+			dockingTool.addLocalAction(this, actionBadFeedback);
+			
+			
 //			DockingAction action = new DockingAction("getAsm", getName()) {
 //				@Override
 //				public void actionPerformed(ActionContext context) {

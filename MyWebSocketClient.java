@@ -7,7 +7,6 @@ import ghidra.app.services.ConsoleService;
 import ghidra.framework.plugintool.PluginTool;
 
 import java.net.URI;
-import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 
 public class MyWebSocketClient extends WebSocketClient  {
