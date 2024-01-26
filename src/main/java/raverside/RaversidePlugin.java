@@ -89,7 +89,7 @@ public class RaversidePlugin extends ProgramPlugin {
 	public RaversidePlugin(PluginTool tool) throws URISyntaxException, InterruptedException {
 		super(tool);
 		this.apiManager = new ApiManager(tool, program);
-	    this.featureManager = new FeatureManager(apiManager, program, tool);
+	    this.featureManager = new FeatureManager(apiManager, program, tool, this);
 		this.helper = new Helper(tool, program, featureManager);
 		
 	    // TODO: Customize provider (or remove if a provider is not desired)
@@ -117,6 +117,10 @@ public class RaversidePlugin extends ProgramPlugin {
 		provider.setProgram(p);
 		provider.refresh();
 	}
+	
+	public MyProvider getProvider() {
+        return provider;
+    }
 
 	// TODO: If provider is desired, it is recommended to move it to its own file
 	protected static class MyProvider extends ComponentProvider {
@@ -469,6 +473,10 @@ public class RaversidePlugin extends ProgramPlugin {
 
 		// TODO: Customize actions
 		private void createActions() {
+			
+			Icon goodIcon = ResourceManager.loadImage("images/good.png");
+			Icon badIcon = ResourceManager.loadImage("images/bad.png");
+			Icon refreshIcon = ResourceManager.loadImage("images/refresh.png");
 
 
 			actionGetFunctions = new DockingAction("Refresh", getName()) {
@@ -477,7 +485,7 @@ public class RaversidePlugin extends ProgramPlugin {
 					refresh();
 				}
 			};
-			actionGetFunctions.setToolBarData(new ToolBarData(Icons.REFRESH_ICON, null));
+			actionGetFunctions.setToolBarData(new ToolBarData(refreshIcon, null));
 			actionGetFunctions.setEnabled(true);
 			actionGetFunctions.markHelpUnnecessary();
 			dockingTool.addLocalAction(this, actionGetFunctions);
@@ -490,7 +498,7 @@ public class RaversidePlugin extends ProgramPlugin {
 				}
 			};
 			
-			actionGoodFeedback.setToolBarData(new ToolBarData(Icons.ADD_ICON, null));
+			actionGoodFeedback.setToolBarData(new ToolBarData(goodIcon, null));
 			actionGoodFeedback.setEnabled(true);
 			actionGoodFeedback.markHelpUnnecessary();
 			dockingTool.addLocalAction(this, actionGoodFeedback);
@@ -503,7 +511,7 @@ public class RaversidePlugin extends ProgramPlugin {
 				}
 			};
 			
-			actionBadFeedback.setToolBarData(new ToolBarData(Icons.DELETE_ICON, null));
+			actionBadFeedback.setToolBarData(new ToolBarData(badIcon, null));
 			actionBadFeedback.setEnabled(true);
 			actionBadFeedback.markHelpUnnecessary();
 			dockingTool.addLocalAction(this, actionBadFeedback);

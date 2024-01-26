@@ -18,6 +18,7 @@ import ghidra.program.model.listing.Variable;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
+import raverside.RaversidePlugin.MyProvider;
 import raverside.RenameDialog.RenameItem;
 
 import com.google.gson.JsonArray;
@@ -26,18 +27,24 @@ import com.google.gson.JsonParser;
 
 import java.awt.*;
 import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
 
 public class FeatureManager {
     private ApiManager apiManager;
     private Program program;
     private PluginTool tool;
+    private RaversidePlugin raversidePlugin;
 
-    public FeatureManager(ApiManager apiManager, Program program, PluginTool tool) {
+    public FeatureManager(ApiManager apiManager, Program program, PluginTool tool, RaversidePlugin raversidePlugin) {
         this.apiManager = apiManager;
         this.program = program;
         this.tool = tool;
+        this.raversidePlugin = raversidePlugin;
     }
 
     public void setProgram(Program program) {
@@ -114,6 +121,7 @@ public class FeatureManager {
                     }
                 }
             }
+            raversidePlugin.getProvider().refresh();
         } catch (Exception e) {
             Msg.showError(this, null, "Rename Error", "An error occurred during renaming: " + e.getMessage());
         } finally {
@@ -220,5 +228,6 @@ public class FeatureManager {
 
         codeUnit.setComment(CodeUnit.PLATE_COMMENT, formattedComment.toString());
     }
+    
 
 }

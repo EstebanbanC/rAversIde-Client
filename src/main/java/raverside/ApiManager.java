@@ -32,7 +32,7 @@ public class ApiManager {
     private static MyWebSocketClient client;
 
     private JTextArea theTextArea;
-    private final ExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
     private final ReentrantLock lock = new ReentrantLock();
 
     public ApiManager(PluginTool tool, Program program) {
@@ -100,19 +100,13 @@ public class ApiManager {
     private void sendHttpRequestAsync(String route, String requestData, Consumer<String> callback) {
         ConsoleService consoleService = tool.getService(ConsoleService.class);
         executorService.submit(() -> {
-            if (lock.tryLock()) {
-                try {
-                    String response = sendHttpRequest(route, requestData);
-                    callback.accept(response);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    consoleService.addErrorMessage("Thread error", "Error submitting task: " + e.getMessage());
-                } finally {
-                    lock.unlock();
-                }
-            } else {
-            	consoleService.addErrorMessage("Thread error", "An operation is already underway");
-            }
+            try {
+                String response = sendHttpRequest(route, requestData);
+                callback.accept(response);
+            } catch (IOException e) {
+                e.printStackTrace();
+                consoleService.addErrorMessage("Thread error", "Error submitting task: " + e.getMessage());
+            } 
         });
     }
     
