@@ -1,33 +1,74 @@
-# GHIDRA plugin
+# RAversIde Plugin for Ghidra
 
-1. **Configuration and dependencies**
-    - Details of how to install the plugin.
-        - To install the plugin on your ghidra software, go to :
-        1. **Introduction and objectives of the plugin**
-            - General presentation of the plugin.
-                - Obtain valuable assistance in detecting vulnerabilities, cryptographic algorithms and malicious code using AI.
-            - Objectives and key features.
-                - The purpose of our plugin is to integrate our rAversIde tool into ghidra.
-                - It is capable of interacting with the software to perform simple actions such as highlighting or adding comments. It also communicates with a Rust API. It sends the code required by the user for an AI to process the information and return the addresses to be commented or highlighted.
-        2. **Plugin installation**
-    
-    -> file -> install extensions
-    
-    ![file / Install Extensions](./images/install-extensions.png "Install Extensions")
+## Overview
+**RAverSIde** is an artificial intelligence (AI)-driven reverse engineering assistant designed specifically to integrate with the well-known Ghidra application. It's not just another tool, it's a revolution. RAverSIde transforms the traditional, often complex reverse engineering process into a fluid, efficient and remarkably more accurate process.
 
-     -> ![Plus button](./images/plus.png "plus")
-     
-     -> Select our .zip from our github -> ok -> then restart ghidra.
-    
-    Our plugin window should appear after launching an executable to analyse
+## Features
+- **Automatic renaming**: Suggests new names for functions and variables based on their actions in the code.
+- **Code analysis**: Detects and comments on potential vulnerabilities in the code.
+- **AI chatbot**: Ask the AI questions and get contextual answers, including specific code analysis.
 
-2. **How it works ?**
+## Configuration and Dependencies
+
+### 1. Introduction and Objectives of the Plugin
+
+- **General Presentation of the Plugin**:
+    - Obtain valuable assistance in detecting vulnerabilities, cryptographic algorithms, and malicious code using AI.
+
+- **Objectives and Key Features**:
+    - The purpose of our plugin is to integrate our RAversIde tool into Ghidra.
+    - It is capable of interacting with the software to perform actions such as highlighting or adding comments.
+    - Communicates with a Rust API, sending code required by the user for an AI to process the information and return the addresses to be commented or highlighted.
+
+### 2. Plugin Installation
+
+To install the plugin:
+
+1. Navigate to `file` -> `install extensions`.
+
+   ![file / Install Extensions](./images/install-extensions.png "Install Extensions")
+
+2. Click the ![Plus button](./images/plus.png "plus") icon.
+
+3. Select our `.zip` from our GitHub repository, click `ok`, and then restart Ghidra.
+
+After restarting, our plugin window should appear when you launch an executable for analysis.
+
+## How It Works?
 
 This is what the plugin looks like:
 
 ![Raverside Plugin Image](./images/plugin.png "Plugin")
+
+## Usage
+
+### Renaming Functions and Variables
+
+1. **Select Function or Variable**: Use the `Functions` and `Variables` drop-down menus to select the items you wish to rename.
+
+2. **Rename**: Click the `Rename Functions` or `Rename Variables` buttons for AI suggestions.
+
+3. **Manage Suggestions**: Suggestions will appear in a `Rename Proposals` window. You can choose to accept them or edit them manually.
+
+4. **Apply Changes**: Use the checkboxes to select the desired renames, then click `Confirm` to apply.
+
+   ![Rename Proposals Window](./images/rename.png "Rename")
+
+### Code Analysis
+
+- Click the `Analyze Interesting Patterns` button to have the AI analyze the code of the selected function. Detected vulnerabilities will be commented and highlighted in the Ghidra interface.
+
+### Chatbot AI
+
+1. **Ask a Question**: Type your question in the text box under `Ask questions to our ChatBot`.
+
+2. **Select the Context**: If you want the question to be about a specific function, choose it from the `Functions` drop-down menu.
+
+3. **Get Answers**: Click `Ask` to send the question. The answer will appear in the large text box below.
+
+
     
-3. **Plugin architecture**
+# Plugin architecture
 
 ## Main Class : RaversidePlugin
 
@@ -65,7 +106,7 @@ This is what the plugin looks like:
     ### Overview
     
     - **Purpose**: **`RenameDialog`** is a custom dialog window for presenting rename proposals to the user. It allows users to select which items they want to rename.
-    - **User Interaction**: The dialog presents a list of items to be renamed, each with a checkbox. Users can select which items they wish to rename and confirm their choices.
+    - **User Interaction**: The dialog presents a list of items to be renamed, each with a checkbox. Users can select which items they wish to rename and confirm their choices. If they wish to modify the new name proposed by the AI, there is an "edit" button on the side of the proposal.
     - **Integration**: This dialog is likely integrated into a larger renaming feature within the plugin, where it is used to collect user input on which items should be renamed based on proposed names.
     
     ### Constructor
@@ -113,6 +154,8 @@ This is what the plugin looks like:
         - **Returns**: The type of the item.
     4. **getFunction**
         - **Returns**: The associated Ghidra **`Function`** object.
+    5. **setNewName**
+        - **Set**: The new name manually modified.
     
     ### **`Helper` Class Overview**
     
@@ -208,7 +251,8 @@ This is what the plugin looks like:
 - This WebSocket client is used specifically for chatbot requests, establishing a connection for immediate response reception and processing.
 - The method **`handleWebSocketResponse`** is responsible for processing messages received from the WebSocket, displaying them in Ghidra's interface, and handling the closure of the WebSocket connection.
 
-# restartghidra.sh
+
+# AutoUpdateGhidraPlugin.sh
 
 A problem was encountered while exporting plugins from Eclipse for Ghidra.
 
@@ -222,7 +266,7 @@ To solve this problem, which required 3 restarts of Ghidra for each plugin updat
 
 The script, written in Bash, automates the plugin update process in Ghidra. Here's a simplified explanation of how it works:
 
-1. **Monitoring the Plugin File**: The script continuously monitors a specific file (**`ghidra_10.5_DEV_20240119_Raverside.zip`**). It regularly checks if this file has been modified.
+1. **Monitoring the Plugin File**: The script continuously monitors the last build of your plugin. It regularly checks if this file has been modified.
 2. **Closing Ghidra**: When a modification is detected in the plugin file, the script searches for the Ghidra process that is running and closes it.
 3. **Updating the Plugin**: After closing Ghidra, the script extracts the modified plugin ZIP file into Ghidra's extension directory.
 4. **Restarting Ghidra**: Finally, the script automatically restarts Ghidra.
