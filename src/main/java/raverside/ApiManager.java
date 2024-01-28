@@ -26,7 +26,7 @@ import javax.swing.JTextArea;
 
 public class ApiManager {
 
-    private static final String BASE_URL = "http://127.0.0.1:8000";
+    private static final String BASE_URL = "https://raverside.aymeric-daniel.com";
     private PluginTool tool;
     private Program program;
     private static MyWebSocketClient client;
