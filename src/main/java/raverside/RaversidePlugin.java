@@ -15,22 +15,10 @@
  */
 package raverside;
 
-import java.awt.*;
-
-import javax.swing.*;
-
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
-import java.awt.event.ActionEvent;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Arrays;
-
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import docking.ActionContext;
 import docking.ComponentProvider;
 import docking.action.DockingAction;
@@ -41,20 +29,32 @@ import ghidra.app.plugin.PluginCategoryNames;
 import ghidra.app.plugin.ProgramPlugin;
 import ghidra.app.services.ConsoleService;
 import ghidra.app.services.ProgramManager;
-import ghidra.framework.plugintool.*;
+import ghidra.framework.plugintool.Plugin;
+import ghidra.framework.plugintool.PluginInfo;
+import ghidra.framework.plugintool.PluginTool;
 import ghidra.framework.plugintool.util.PluginStatus;
-import ghidra.program.model.listing.Function;
-import ghidra.program.model.listing.FunctionIterator;
-import ghidra.program.model.listing.Instruction;
-import ghidra.program.model.listing.InstructionIterator;
-import ghidra.program.model.listing.Listing;
-import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.Variable;
+import ghidra.program.model.listing.*;
 import ghidra.program.model.symbol.Namespace;
 import ghidra.program.model.symbol.Symbol;
 import ghidra.util.HelpLocation;
 import resources.Icons;
 import resources.ResourceManager;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * TODO: Provide class-level documentation that describes what this plugin does.
@@ -424,6 +424,7 @@ public class RaversidePlugin extends ProgramPlugin {
 		}
 
 
+
 		// NE SAIT PAS SI ON GARDE
 
 		/*private void addCommentsAction(ActionEvent e) {
@@ -648,6 +649,16 @@ public class RaversidePlugin extends ProgramPlugin {
 					}
 				}
 			});
+
+			DockingAction action = new DockingAction("Button test", getName()) {
+				@Override
+				public void actionPerformed(ActionContext context) {
+						featureManager.highlightAndCommentListingFromDecompiledString("main", "__main()", "This is a comment", Color.ORANGE);
+				}
+			};
+
+			action.setToolBarData(new ToolBarData(Icons.UP_ICON, null));
+			dockingTool.addLocalAction(this, action);
 
 		}
 

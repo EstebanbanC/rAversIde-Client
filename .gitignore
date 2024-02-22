@@ -1,1 +1,6 @@
 /target
+/dist
+/build
+/.idea
+build.gradle
+AutoUpdateGhidraPlugin.sh

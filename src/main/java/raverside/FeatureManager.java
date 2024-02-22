@@ -1,20 +1,18 @@
 package raverside;
 
 import com.google.gson.JsonElement;
+import ghidra.app.decompiler.ClangNode;
+import ghidra.app.decompiler.ClangTokenGroup;
 import ghidra.app.decompiler.DecompInterface;
 import ghidra.app.decompiler.DecompileResults;
 import ghidra.app.plugin.core.colorizer.ColorizingService;
 import ghidra.app.services.ConsoleService;
+import ghidra.app.services.ProgramManager;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.address.AddressSetView;
-import ghidra.program.model.listing.Function;
-import ghidra.program.model.listing.InstructionIterator;
-import ghidra.program.model.listing.Listing;
-import ghidra.program.model.listing.Program;
-import ghidra.program.model.listing.CodeUnit;
-import ghidra.program.model.listing.Variable;
+import ghidra.program.model.listing.*;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
@@ -177,7 +175,7 @@ public class FeatureManager {
                 String comment = innerArray.get(1).getAsString();
                 setMultilineComment(codeUnit, comment, maxLineLength);
                 Color color = parseColor(innerArray.get(2).getAsString());
-                SetColor(codeUnit.getAddress(), color);
+                setColor(codeUnit.getAddress(), color);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -193,7 +191,7 @@ public class FeatureManager {
         }
     }
 
-    public void SetColor(Address address, Color color) {
+    public void setColor(Address address, Color color) {
         ColorizingService service = tool.getService(ColorizingService.class);
         Color currentColor = service.getBackgroundColor(address);
         if (currentColor != null && currentColor.equals(color))
@@ -228,6 +226,107 @@ public class FeatureManager {
 
         codeUnit.setComment(CodeUnit.PLATE_COMMENT, formattedComment.toString());
     }
-    
+
+    public void highlightAndCommentListingFromDecompiledString(String _functionName, String _stringLine, String _comment, Color _color) {
+//        refreshCurrentProgram();
+        if (program == null) {
+            Msg.error(this, "No current program");
+            return;
+        }
+
+        ConsoleService consoleService = tool.getService(ConsoleService.class);
+
+        Function function = getFunctionByName(_functionName);
+        if (function == null) {
+            Msg.error(this, "No function found");
+            return;
+        } else {
+            consoleService.addMessage("Function found ", function.getName() + "\n");
+        }
+
+        ClangTokenGroup tokenGroup = getDecompiledTokens(function);
+        if (tokenGroup == null) {
+            Msg.error(this, "No token group found");
+            return;
+        } else {
+            consoleService.addMessage("Token group found ", tokenGroup.toString() + "\n");
+        }
+
+        Address address = getDecompiledAddressFromLine(tokenGroup, _stringLine);
+        if (address == null) {
+            Msg.error(this, "No address found");
+            return;
+        } else {
+            consoleService.addMessage("Address found ", address.toString() + "\n");
+        }
+
+        setColor(address, _color);
+
+        Listing listing = program.getListing();
+        CodeUnit codeUnit = listing.getCodeUnitAt(address);
+        if (codeUnit == null) {
+            Msg.error(this, "No code unit found");
+            return;
+        } else {
+            consoleService.addMessage("Code unit found ", codeUnit.toString() + "\n");
+        }
+
+        consoleService.addMessage("Comment to set ", _comment + "\n");
+        listing.setComment(address, CodeUnit.PLATE_COMMENT, _comment);
+        codeUnit.setComment(CodeUnit.PLATE_COMMENT, _comment);
+        setMultilineComment(codeUnit, _comment, 55);
+
+    }
+
+    private Function getFunctionByName(String _functionName) {
+//        refreshCurrentProgram();
+        if (program == null) {
+            Msg.error(this, "No current program");
+            return null;
+        }
+        FunctionIterator functionIterator = program.getListing().getFunctions(true);
+        while (functionIterator.hasNext()) {
+            Function function = functionIterator.next();
+            if (function.getName().equals(_functionName)) {
+                return function;
+            }
+        }
+        return null;
+    }
+
+    private ClangTokenGroup getDecompiledTokens(Function _function) {
+        DecompInterface decompInterface = new DecompInterface();
+        decompInterface.openProgram(program);
+        DecompileResults decompResults = decompInterface.decompileFunction(_function, 60, null);
+        if (decompResults != null) {
+            return decompResults.getCCodeMarkup();
+        }
+        return null;
+    }
+
+    private Address getDecompiledAddressFromLine(ClangNode _node, String _line) {
+        int numChildren = _node.numChildren();
+//        Listing listing = program.getListing();
+        for (int i = 0; i < numChildren; i++) {
+            ClangNode child = _node.Child(i);
+            Address minAddress = child.getMinAddress();
+            Address maxAddress = child.getMaxAddress();
+            if (minAddress != null && maxAddress != null) {
+                if (minAddress.equals(maxAddress)) {
+                    if (child.toString().equals(_line)) {
+                        return minAddress;
+                    }
+                } else {
+                    Address address = getDecompiledAddressFromLine(child, _line);
+                    if (address != null) {
+                        return address;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+
 
 }
