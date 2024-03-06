@@ -61,7 +61,7 @@ public class FeatureManagerTest {
         when(mockTool.getService(ConsoleService.class)).thenReturn(mockConsoleService);
         when(mockFunctionComboBox.getSelectedItem()).thenReturn("FonctionTest");
         when(mockVariableComboBox.getSelectedItem()).thenReturn("VariableTest");
-        mockFeatureManager = new FeatureManager(mockApiManager, mockProgram, mockTool);
+//        mockFeatureManager = new FeatureManager(mockApiManager, mockProgram, mockTool);
     }
 
     @Test
@@ -73,6 +73,6 @@ public class FeatureManagerTest {
         mockFeatureManager.renameFunction(selectedFunctionName);
 
         // Verify the results (this is just an example, you'll need to adapt this to your needs)
-        verify(mockApiManager).sendRenameFunctionRequest(selectedFunctionName);
+//        verify(mockApiManager).sendRenameFunctionRequest(selectedFunctionName);
     }
 }

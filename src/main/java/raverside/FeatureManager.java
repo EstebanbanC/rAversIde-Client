@@ -1,10 +1,8 @@
 package raverside;
 
 import com.google.gson.JsonElement;
-import ghidra.app.decompiler.ClangNode;
-import ghidra.app.decompiler.ClangTokenGroup;
-import ghidra.app.decompiler.DecompInterface;
-import ghidra.app.decompiler.DecompileResults;
+import ghidra.app.decompiler.*;
+import ghidra.app.decompiler.component.DecompilerUtils;
 import ghidra.app.plugin.core.colorizer.ColorizingService;
 import ghidra.app.services.ConsoleService;
 import ghidra.app.services.ProgramManager;
@@ -13,9 +11,11 @@ import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.address.AddressSetView;
 import ghidra.program.model.listing.*;
+import ghidra.program.model.pcode.PcodeOp;
 import ghidra.program.model.symbol.SourceType;
 import ghidra.util.Msg;
 import ghidra.util.task.TaskMonitor;
+import org.python.antlr.ast.Str;
 import raverside.RaversidePlugin.MyProvider;
 import raverside.RenameDialog.RenameItem;
 
@@ -24,13 +24,19 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import java.awt.*;
+import java.io.Console;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
+import javax.management.monitor.Monitor;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
+
+import static org.python.modules.time.Time.sleep;
 
 public class FeatureManager {
     private ApiManager apiManager;
@@ -46,8 +52,8 @@ public class FeatureManager {
     }
 
     public void setProgram(Program program) {
-            this.program = program;
-        }
+        this.program = program;
+    }
 
     public void renameFunction(String selectedFunctionName) throws IOException {
         ConsoleService consoleService = tool.getService(ConsoleService.class);
@@ -56,7 +62,7 @@ public class FeatureManager {
             apiManager.sendRenameFunctionRequest(selectedFunctionName, responseJson -> {
                 if (responseJson != null) {
                     processRenameResponse(responseJson, selectedFunction);
-		            consoleService.addMessage("response :", String.valueOf(responseJson) + "\n");
+                    consoleService.addMessage("response :", String.valueOf(responseJson) + "\n");
                 }
             }, error -> {
                 consoleService.addErrorMessage("API Error", "Error while renaming function: " + error.getMessage());
@@ -72,10 +78,10 @@ public class FeatureManager {
             apiManager.sendRenameVariableRequest(selectedVariableName, selectedFunctionName, responseJson -> {
                 if (responseJson != null) {
                     processRenameResponse(responseJson, selectedFunction);
-		            consoleService.addMessage("response :", String.valueOf(responseJson) + "\n");
+                    consoleService.addMessage("response :", String.valueOf(responseJson) + "\n");
                 }
             }, error -> {
-            	consoleService.addErrorMessage("API Error", "Error while renaming variable: " + error.getMessage());
+                consoleService.addErrorMessage("API Error", "Error while renaming variable: " + error.getMessage());
             });
         }
     }
@@ -183,24 +189,22 @@ public class FeatureManager {
     }
 
     private Color parseColor(String colorStr) {
-        switch (colorStr.toLowerCase()) {
-            case "yellow": case "jaune": return Color.YELLOW;
-            case "red": case "rouge": return Color.RED;
-            case "orange": return Color.ORANGE;
-            default: return Color.GRAY;
-        }
+        return switch (colorStr.toLowerCase()) {
+            case "yellow", "jaune" -> Color.YELLOW;
+            case "red", "rouge" -> Color.RED;
+            case "orange" -> Color.ORANGE;
+            default -> Color.GRAY;
+        };
     }
 
     public void setColor(Address address, Color color) {
         ColorizingService service = tool.getService(ColorizingService.class);
         Color currentColor = service.getBackgroundColor(address);
-        if (currentColor != null && currentColor.equals(color))
-        {
+        if (currentColor != null && currentColor.equals(color)) {
             int TransactionID = program.startTransaction("UnSetColor");
             service.clearBackgroundColor(address, address);
             program.endTransaction(TransactionID, true);
-        }
-        else {
+        } else {
             int TransactionID = program.startTransaction("SetColor");
             service.setBackgroundColor(address, address, color);
             program.endTransaction(TransactionID, true);
@@ -227,59 +231,61 @@ public class FeatureManager {
         codeUnit.setComment(CodeUnit.PLATE_COMMENT, formattedComment.toString());
     }
 
-    public void highlightAndCommentListingFromDecompiledString(String _functionName, String _stringLine, String _comment, Color _color) {
-//        refreshCurrentProgram();
-        if (program == null) {
-            Msg.error(this, "No current program");
-            return;
+    public void highlightAndCommentListingFromDecompiledString(String _functionName, String _line, String _comment, Color _color) {
+        if (_functionName == null || _functionName.isEmpty()) {
+            throw new IllegalArgumentException("Function name cannot be null or empty");
+        }
+        if (_line == null || _line.isEmpty()) {
+            throw new IllegalArgumentException("Line cannot be null or empty");
+        }
+        if (_comment == null) {
+            throw new IllegalArgumentException("Comment cannot be null");
+        }
+        if (_color == null) {
+            throw new IllegalArgumentException("Color cannot be null");
         }
 
         ConsoleService consoleService = tool.getService(ConsoleService.class);
+        try {
+            if (program == null) {
+                throw new Exception("No current program");
+            }
 
-        Function function = getFunctionByName(_functionName);
-        if (function == null) {
-            Msg.error(this, "No function found");
-            return;
-        } else {
+            Function function = getFunctionByName(_functionName);
+            if (function == null) {
+                throw new Exception("No function found");
+            }
             consoleService.addMessage("Function found ", function.getName() + "\n");
-        }
 
-        ClangTokenGroup tokenGroup = getDecompiledTokens(function);
-        if (tokenGroup == null) {
-            Msg.error(this, "No token group found");
-            return;
-        } else {
+
+            ClangTokenGroup tokenGroup = getDecompiledTokens(function);
+            if (tokenGroup == null) {
+                throw new Exception("No token group found");
+            }
             consoleService.addMessage("Token group found ", tokenGroup.toString() + "\n");
-        }
 
-        Address address = getDecompiledAddressFromLine(tokenGroup, _stringLine);
-        if (address == null) {
-            Msg.error(this, "No address found");
-            return;
-        } else {
+
+            ArrayList<Address> address = getDecompiledAddressFromLine(tokenGroup, _line, 0);
+            if (address == null) {
+                throw new Exception("No address found");
+            }
             consoleService.addMessage("Address found ", address.toString() + "\n");
+            setColorOnMultipleAddresses(address, _color);
+
+
+            Listing listing = program.getListing();
+            if (listing == null) {
+                throw new Exception("No listing found");
+            }
+            listing.setComment(address.get(0), CodeUnit.PLATE_COMMENT, _comment);
+
+
+        } catch (Exception e) {
+            consoleService.addErrorMessage("Error", e.getMessage());
         }
-
-        setColor(address, _color);
-
-        Listing listing = program.getListing();
-        CodeUnit codeUnit = listing.getCodeUnitAt(address);
-        if (codeUnit == null) {
-            Msg.error(this, "No code unit found");
-            return;
-        } else {
-            consoleService.addMessage("Code unit found ", codeUnit.toString() + "\n");
-        }
-
-        consoleService.addMessage("Comment to set ", _comment + "\n");
-        listing.setComment(address, CodeUnit.PLATE_COMMENT, _comment);
-        codeUnit.setComment(CodeUnit.PLATE_COMMENT, _comment);
-        setMultilineComment(codeUnit, _comment, 55);
-
     }
 
     private Function getFunctionByName(String _functionName) {
-//        refreshCurrentProgram();
         if (program == null) {
             Msg.error(this, "No current program");
             return null;
@@ -304,29 +310,75 @@ public class FeatureManager {
         return null;
     }
 
-    private Address getDecompiledAddressFromLine(ClangNode _node, String _line) {
+
+    private ArrayList<Address> getDecompiledAddressFromLine(ClangNode _node, String _line, int _index) {
+        if (_node == null || _line == null || _line.isEmpty()) {
+            throw new IllegalArgumentException("Node and line cannot be null or empty");
+        }
+        if (!_node.toString().contains(_line))
+            return null;
+
+//        ConsoleService consoleService = tool.getService(ConsoleService.class);
+
         int numChildren = _node.numChildren();
-//        Listing listing = program.getListing();
+
         for (int i = 0; i < numChildren; i++) {
             ClangNode child = _node.Child(i);
-            Address minAddress = child.getMinAddress();
-            Address maxAddress = child.getMaxAddress();
-            if (minAddress != null && maxAddress != null) {
-                if (minAddress.equals(maxAddress)) {
-                    if (child.toString().equals(_line)) {
-                        return minAddress;
-                    }
-                } else {
-                    Address address = getDecompiledAddressFromLine(child, _line);
-                    if (address != null) {
-                        return address;
-                    }
+            if (!child.toString().contains(_line)) {
+                continue;
+            }
+//            consoleService.addMessage("", "\t".repeat(_index) + child + "\n");
+            ArrayList<Address> address = getDecompiledAddressFromLine(child, _line, _index + 1);
+            if (address == null) {
+                continue;
+            }
+            return address;
+
+        }
+        String tmp = "";
+        ArrayList<Address> ret = new ArrayList<>();
+        for (int i = 0; i < numChildren; i++) {
+            ClangNode child = _node.Child(i);
+            if (child.toString().isEmpty() || child.toString().equals(" ")) {
+                continue;
+            }
+            if (_line.contains(child.toString())) {
+                tmp = tmp.concat(child.toString());
+                Address childMinAddress = child.getMinAddress();
+                Address childMaxAddress = child.getMaxAddress();
+                if (childMinAddress != null && childMaxAddress != null) {
+                    ret.add(childMinAddress);
+                    ret.add(childMaxAddress);
+                }
+                if (tmp.equals(_line)) {
+                    break;
                 }
             }
         }
+        if (!tmp.isEmpty()) {
+            return ret;
+        }
+
         return null;
     }
 
+    public void setColorOnMultipleAddresses(ArrayList<Address> _addresses, Color _color) {
+        if (_addresses == null) {
+            throw new IllegalArgumentException("Addresses cannot be null");
+        }
+        if (_color == null) {
+            throw new IllegalArgumentException("Color cannot be null");
+        }
 
+        ColorizingService service = tool.getService(ColorizingService.class);
+        int TransactionID = program.startTransaction("SetColor");
+
+        for (int i = 0; i < _addresses.size(); i += 2) {
+            Address start = _addresses.get(i);
+            Address end = _addresses.get(i + 1);
+            service.setBackgroundColor(start, end, _color);
+        }
+        program.endTransaction(TransactionID, true);
+    }
 
 }
