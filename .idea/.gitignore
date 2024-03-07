@@ -11,4 +11,5 @@
 /dist
 /build
 build.gradle
-AutoUpdateGhidraPlugin.sh
+AutoUpdateGhidraPlugin.sh# GitHub Copilot persisted chat sessions
+/copilot/chatSessions

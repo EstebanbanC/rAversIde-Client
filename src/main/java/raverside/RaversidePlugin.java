@@ -43,9 +43,7 @@ import resources.ResourceManager;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
+import java.awt.event.*;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -221,7 +219,102 @@ public class RaversidePlugin extends ProgramPlugin {
             gbc.weighty = 2.0; // Set weight for IA panel
             panel.add(buildIAPanel(), gbc);
 
+
+//            panel = new JPanel(new GridBagLayout());
+//            gbc.gridy = 0;
+//            gbc.weighty = 0; // Set weight for Analyse panel
+//            panel.add(createMiscellaneousPanel(), gbc);
+//            gbc.gridy = 1;
+//            gbc.weighty = 1.0; // Set weight for Analyse panel
+//            panel.add(createChatIAPanel(), gbc);
+
             setVisible(true);
+        }
+
+        protected JPanel createMiscellaneousPanel(){
+            JPanel miscellaneousPanel = new JPanel();
+            miscellaneousPanel.setLayout(new GridBagLayout());
+            miscellaneousPanel.setBorder(BorderFactory.createTitledBorder("Miscellaneous"));
+
+            functionComboBox = new JComboBox<>(new String[]{"All Functions"});
+//            comboBox.addItem("Item 1");
+//            comboBox.addItem("Item 2");
+//            comboBox.addItem("Item 3");
+
+            GridBagConstraints constraints = new GridBagConstraints();
+            constraints.gridx = 0;
+            constraints.gridy = 0;
+            constraints.gridwidth = 2; // Make the JComboBox span across 2 columns
+            constraints.fill = GridBagConstraints.HORIZONTAL;
+            constraints.weightx = 1.0;
+            constraints.insets = new Insets(5, 5, 5, 5);
+            miscellaneousPanel.add(functionComboBox, constraints);
+
+            JButton button1 = new JButton("Analyse");
+
+            constraints = new GridBagConstraints();
+            constraints.gridx = 0;
+            constraints.gridy = 1;
+            constraints.fill = GridBagConstraints.HORIZONTAL;
+            constraints.weightx = 0.5;
+            constraints.insets = new Insets(5, 5, 5, 5);
+            miscellaneousPanel.add(button1, constraints);
+
+            JButton button2 = new JButton("Rename/Retype");
+
+            constraints = new GridBagConstraints();
+            constraints.gridx = 1;
+            constraints.gridy = 1;
+            constraints.fill = GridBagConstraints.HORIZONTAL;
+            constraints.weightx = 0.5;
+            constraints.insets = new Insets(5, 5, 5, 5);
+            miscellaneousPanel.add(button2, constraints);
+
+            return miscellaneousPanel;
+        }
+
+        protected JPanel createChatIAPanel(){
+            JPanel chatIAPanel = new JPanel();
+            chatIAPanel.setLayout(new BorderLayout());
+            chatIAPanel.setBorder(BorderFactory.createTitledBorder("Chat"));
+
+            JTextArea textArea = new JTextArea();
+            textArea.setEditable(false);
+
+            JScrollPane scrollPane = new JScrollPane(textArea);
+
+            JTextField textField = new JTextField();
+            textField.setForeground(Color.GRAY);
+            textField.setText("Write your message...");
+            textField.addFocusListener(new FocusListener() {
+                @Override
+                public void focusGained(FocusEvent e) {
+                    if (textField.getText().equals("Write your message...")) {
+                        textField.setText("");
+                        textField.setForeground(Color.BLACK);
+                    }
+                }
+
+                @Override
+                public void focusLost(FocusEvent e) {
+                    if (textField.getText().isEmpty()) {
+                        textField.setForeground(Color.GRAY);
+                        textField.setText("Write your message...");
+                    }
+                }
+            });
+
+            JButton sendButton = new JButton("SEND");
+
+            JPanel bottomPanel = new JPanel();
+            bottomPanel.setLayout(new BorderLayout());
+            bottomPanel.add(textField, BorderLayout.CENTER);
+            bottomPanel.add(sendButton, BorderLayout.EAST);
+
+            chatIAPanel.add(scrollPane, BorderLayout.CENTER);
+            chatIAPanel.add(bottomPanel, BorderLayout.SOUTH);
+
+            return chatIAPanel;
         }
 
         protected JPanel buildRenameRetypePanel() {
